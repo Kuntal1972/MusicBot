@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Music Bot</title>
+    <title>Music Player</title>
 
     <!-- Prevent Flash of Unstyled Content -->
     <style>html { visibility: hidden; opacity: 0; }</style>
@@ -34,8 +34,8 @@
         <div class="header-brand">
             <span class="brand-icon">🎵</span>
             <div>
-                <h1>YouTube Music Bot</h1>
-                <div class="header-sub">Browser-based · No YouTube tab needed</div>
+                <h1>Music Player</h1>
+                <div class="header-sub">Browser Based Music Player</div>
             </div>
         </div>
         <div class="player-status-bar">
@@ -82,22 +82,17 @@
                 </div>
             </section>
 
-            <!-- Playlist -->
+            <!-- Voice Play -->
             <section class="card">
-                <h2 class="section-title">Playlist</h2>
-                <div class="input-row">
-                    <input type="text" id="playlistInput" class="text-input" placeholder="Playlist name or YouTube URL…" autocomplete="off">
-                    <button id="playPlaylistBtn" class="btn btn-primary">▶ Play</button>
-                </div>
-                <!-- Voice → direct play -->
+                <h2 class="section-title">Voice Play</h2>
                 <div class="input-row">
                     <button id="voicePlayBtn" class="btn btn-voice-direct" style="flex:1;"
                             title="Speak a song or playlist name and it plays immediately — no queue needed">
                         🎤 Voice Direct Play
                     </button>
                 </div>
-                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">
-                    Say <em>"playlist Lo-fi Hip Hop"</em> or <em>"Blinding Lights"</em> — it plays instantly.
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:8px;">
+                    Try saying: <em>"Hay Boss Play Ek Pyar Ka Nagma Hai"</em>
                 </div>
             </section>
 
