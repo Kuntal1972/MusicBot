@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Music Bot</title>
+
+    <!-- Prevent Flash of Unstyled Content -->
+    <style>html { visibility: hidden; opacity: 0; }</style>
+
+    <!-- Cache-busting: ?v=3 forces browser to fetch fresh CSS/JS even if cached -->
+    <link rel="stylesheet" href="css/styles.css?v=3"
+          onload="document.documentElement.style.cssText='visibility:visible;opacity:1;transition:opacity .2s ease'">
+
+    <noscript><style>html { visibility: visible; opacity: 1; }</style></noscript>
+</head>
+<body>
+<div class="app-wrapper">
+
+    <!-- API Key Warning -->
+    <div id="apiKeyWarning" class="api-warning" style="display:none;">
+        <span class="warn-icon">⚠️</span>
+        <span>
+            <strong>YouTube API key not configured.</strong>
+            Open <code>js/config.js</code> and replace <code>YOUR_YOUTUBE_DATA_API_V3_KEY_HERE</code> with your key.
+            Get one free at
+            <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>
+            by enabling <em>YouTube Data API v3</em>.
+        </span>
+    </div>
+
+    <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+    <header class="app-header">
+        <div class="header-brand">
+            <span class="brand-icon">🎵</span>
+            <div>
+                <h1>YouTube Music Bot</h1>
+                <div class="header-sub">Browser-based · No YouTube tab needed</div>
+            </div>
+        </div>
+        <div class="player-status-bar">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusLabel">Initialising…</span>
+        </div>
+    </header>
+
+    <!-- ══ MAIN ════════════════════════════════════════════════════════════ -->
+    <main class="app-main">
+
+        <!-- ── LEFT PANEL ─────────────────────────────────────────────── -->
+        <div class="left-panel">
+
+            <!-- Add Songs -->
+            <section class="card">
+                <h2 class="section-title">Add Songs</h2>
+
+                <!-- Text input -->
+                <div class="input-row">
+                    <input type="text" id="songInput" class="text-input" placeholder="Song name or artist – title…" autocomplete="off">
+                    <button id="addSongBtn" class="btn btn-primary">+ Add</button>
+                </div>
+
+                <!-- Voice add to table -->
+                <div class="input-row">
+                    <button id="voiceAddBtn" class="btn btn-voice" style="flex:1;" title="Speak a song name to add it to the queue table">
+                        🎤 Voice Add to Table
+                    </button>
+                </div>
+
+                <!-- CSV upload -->
+                <div class="input-row" style="align-items:center; gap:10px;">
+                    <label class="file-upload-wrapper" style="flex:1;">
+                        <input type="file" id="csvUpload" class="file-input-hidden" accept=".csv,.txt">
+                        <span class="file-upload-btn" onclick="document.getElementById('csvUpload').click()">
+                            📁 Upload CSV / TXT
+                        </span>
+                    </label>
+                    <span id="csvStatus" class="status-badge" style="display:none;"></span>
+                </div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">
+                    CSV format: one song name per line, or comma-separated with a header row.
+                </div>
+            </section>
+
+            <!-- Playlist -->
+            <section class="card">
+                <h2 class="section-title">Playlist</h2>
+                <div class="input-row">
+                    <input type="text" id="playlistInput" class="text-input" placeholder="Playlist name or YouTube URL…" autocomplete="off">
+                    <button id="playPlaylistBtn" class="btn btn-primary">▶ Play</button>
+                </div>
+                <!-- Voice → direct play -->
+                <div class="input-row">
+                    <button id="voicePlayBtn" class="btn btn-voice-direct" style="flex:1;"
+                            title="Speak a song or playlist name and it plays immediately — no queue needed">
+                        🎤 Voice Direct Play
+                    </button>
+                </div>
+                <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">
+                    Say <em>"playlist Lo-fi Hip Hop"</em> or <em>"Blinding Lights"</em> — it plays instantly.
+                </div>
+            </section>
+
+        </div><!-- /left-panel -->
+
+        <!-- ── CENTRE PANEL — QUEUE TABLE ─────────────────────────────── -->
+        <div class="centre-panel">
+            <section class="card queue-card">
+
+                <!-- Queue header -->
+                <div class="queue-header">
+                    <h2 class="section-title">Song Queue</h2>
+                    <div class="queue-actions">
+                        <button id="selectAllBtn"    class="btn btn-sm btn-secondary">☑ All</button>
+                        <button id="deselectAllBtn"  class="btn btn-sm btn-secondary">☐ None</button>
+                        <button id="playSelectedBtn" class="btn btn-sm btn-success">▶ Play Selected</button>
+                        <button id="clearAllBtn"     class="btn btn-sm btn-danger">🗑 Clear All</button>
+                    </div>
+                </div>
+
+                <!-- Stats bar -->
+                <div class="queue-meta">
+                    <span>🎵 <strong id="totalSongs">0 songs</strong></span>
+                    <span>☑ <strong id="selectedSongs">0 selected</strong></span>
+                </div>
+
+                <!-- Table -->
+                <div class="table-scroll">
+                    <table class="queue-table" id="queueTable" role="grid" aria-label="Song Queue">
+                        <thead>
+                            <tr>
+                                <th class="col-check">
+                                    <input type="checkbox" id="masterCheckbox" title="Select / deselect all">
+                                </th>
+                                <th class="col-num">#</th>
+                                <th class="col-title">Song Name</th>
+                                <th class="col-source">Source</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queueBody">
+                            <tr class="empty-row">
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <span class="empty-icon">🎵</span>
+                                        <p>No songs in queue. Add songs using the panel on the left!</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </section>
+        </div><!-- /centre-panel -->
+
+        <!-- ── RIGHT PANEL ────────────────────────────────────────────── -->
+        <div class="right-panel">
+
+            <!-- Now Playing -->
+            <section class="card">
+                <h2 class="section-title">Now Playing</h2>
+
+                <div class="now-playing-info">
+                    <div class="song-thumb">
+                        <img id="thumbImg" src="" alt="Thumbnail">
+                        <span id="thumbPlaceholder" class="thumb-placeholder">🎵</span>
+                    </div>
+                    <div class="song-details">
+                        <div id="nowPlayingTitle" class="now-playing-title">No song playing</div>
+                        <div id="nowPlayingSub"   class="now-playing-sub">—</div>
+                    </div>
+                </div>
+
+                <div class="player-controls">
+                    <div class="playback-row">
+                        <button id="prevBtn"      class="ctrl-btn"               title="Previous">⏮</button>
+                        <button id="stopBtn"      class="ctrl-btn"               title="Stop">⏹</button>
+                        <button id="playPauseBtn" class="ctrl-btn ctrl-btn-play" title="Play / Pause">▶</button>
+                        <button id="resumeBtn"    class="ctrl-btn"               title="Resume">⏯</button>
+                        <button id="nextBtn"      class="ctrl-btn"               title="Next">⏭</button>
+                    </div>
+                    <div class="volume-row">
+                        <span class="vol-icon" id="volDownBtn" title="Volume down" style="cursor:pointer;user-select:none;">🔉</span>
+                        <input type="range" id="volumeSlider" min="0" max="100" value="70" class="volume-slider" title="Volume">
+                        <span class="vol-icon" id="volUpBtn"   title="Volume up"   style="cursor:pointer;user-select:none;">🔊</span>
+                        <span id="volumeDisplay" class="volume-label">70%</span>
+                    </div>
+                </div>
+
+                <!-- Embedded YouTube IFrame -->
+                <div class="yt-embed-container" style="margin-top:14px;">
+                    <div class="yt-embed-label">▶ YouTube Player (embedded — music plays here)</div>
+                    <div id="ytPlayerIframe" style="display:block;width:100%;min-height:160px;background:#000;"></div>
+                </div>
+            </section>
+
+        </div><!-- /right-panel -->
+
+    </main><!-- /app-main -->
+
+</div><!-- /app-wrapper -->
+
+<!-- ══ LOADING OVERLAY ════════════════════════════════════════════════════ -->
+<div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <p id="loadingText" class="loading-text">Searching…</p>
+</div>
+
+<!-- ══ VOICE OVERLAY ══════════════════════════════════════════════════════ -->
+<div id="voiceOverlay" class="voice-overlay hidden" role="dialog" aria-modal="true" aria-label="Voice Input">
+    <div class="voice-modal">
+        <div class="voice-animation">
+            <div class="voice-circle"></div>
+            <div class="voice-circle"></div>
+            <div class="voice-circle"></div>
+            <span class="voice-mic-icon">🎙️</span>
+        </div>
+        <p id="voiceListeningText" class="voice-listening-text">Listening…</p>
+        <p id="voiceInterimText"   class="voice-interim-text"></p>
+        <button id="cancelVoiceBtn" class="btn btn-danger btn-sm">✕ Cancel</button>
+    </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════════════════════════════════ -->
+<div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+<!-- ══ SCRIPTS ════════════════════════════════════════════════════════════ -->
+<script src="js/config.js?v=3"></script>
+<script src="js/queue-manager.js?v=3"></script>
+<script src="js/csv-parser.js?v=3"></script>
+<script src="js/voice-recognition.js?v=3"></script>
+<script src="js/youtube-player.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+
+</body>
+</html>
